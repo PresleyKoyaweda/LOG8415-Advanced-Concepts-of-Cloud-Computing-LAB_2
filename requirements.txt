@@ -1,0 +1,4 @@
+flask
+redis
+transformers
+torch

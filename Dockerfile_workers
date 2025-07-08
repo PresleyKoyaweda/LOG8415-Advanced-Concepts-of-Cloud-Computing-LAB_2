@@ -1,0 +1,41 @@
+# Étape 1 : Étape de construction en utilisant python:3.8-slim-buster pour éviter les problèmes de compatibilité avec PyTorch
+FROM python:3.8-slim-buster AS builder
+
+# Définir le répertoire de travail dans le conteneur sur /code
+WORKDIR /code
+
+# Mettre à jour la liste des paquets et installer les dépendances système minimales nécessaires pour PyTorch et Transformers
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installer les dépendances Python : PyTorch (version CPU uniquement), Flask, et Transformers
+RUN pip install --no-cache-dir torch==2.0.1+cpu -f https://download.pytorch.org/whl/torch_stable.html \
+    && pip install --no-cache-dir flask \
+    && pip install --no-cache-dir transformers[torch]
+
+# Étape 2 : Étape d'exécution (image finale allégée)
+FROM python:3.8-slim-buster
+
+# Définir le répertoire de travail dans le conteneur sur /code
+WORKDIR /code
+
+# Copier uniquement les dépendances Python installées depuis l'étape de construction pour éviter de réinstaller les paquets
+COPY --from=builder /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copier le fichier API_workers.py dans le conteneur
+COPY API_workers.py /code/
+
+# Supprimer tous les fichiers inutiles dans l'image finale pour optimiser sa taille
+RUN rm -rf /usr/local/include/* /usr/local/lib/python3.8/test/*
+
+# Définir la variable d'environnement pour indiquer à Flask quel fichier exécuter
+ENV FLASK_APP=API_workers.py
+
+# Exposer uniquement le port 5000 à l'extérieur du conteneur (le port 5001 est redondant ici)
+EXPOSE 5000
+
+# Commande à exécuter : démarrer l'application Flask en liant tous les hôtes et en utilisant le port 5000
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

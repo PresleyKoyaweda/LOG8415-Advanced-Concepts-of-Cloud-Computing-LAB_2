@@ -1,0 +1,10 @@
+version: '3'
+services:
+  app1:
+    image: container1  # Utilisation de l'image "container1" pour le premier conteneur
+    ports:
+      - "5000:5000"
+  app2:
+    image: container1  # Utilisation de la même image "container1" pour le deuxième conteneur
+    ports:
+      - "5001:5000"

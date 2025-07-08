@@ -1,0 +1,23 @@
+# Image de base avec Python 3.8
+FROM python:3.8-slim
+
+# Définir des variables d'environnement pour éviter le buffering dans Docker
+ENV PYTHONUNBUFFERED=1
+
+# Définir le répertoire de travail dans le conteneur
+WORKDIR /code
+
+# Copier les fichiers nécessaires dans le conteneur
+COPY containers_status.json /code/
+COPY API_orchestrator.py /code/
+
+# Installer les dépendances
+RUN pip install --no-cache-dir torch==2.0.1+cpu -f https://download.pytorch.org/whl/torch_stable.html \
+    && pip install --no-cache-dir flask \
+    && pip install --no-cache-dir transformers[torch]
+
+# Exposer le port 80 pour qu'il soit accessible depuis l'extérieur du conteneur
+EXPOSE 80
+
+# Lancer l'application Flask
+CMD ["python3", "API_orchestrator.py"]
